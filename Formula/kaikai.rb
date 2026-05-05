@@ -83,9 +83,28 @@ class Kaikai < Formula
   end
 
   def install
-    bin.install "bin/kai"
-    libexec.install "libexec/kaikai/kaic2"
-    (share/"kaikai").install Dir["share/kaikai/*"]
+    # `bin/kai` resolves its own layout from $0's location: ROOT is the
+    # parent of $SCRIPT_DIR. Brew symlinks bin and share to
+    # HOMEBREW_PREFIX, but libexec stays in the Cellar — so we cannot
+    # rely on the brew prefix tree as ROOT.
+    #
+    # Strategy: replicate the tarball's layout entirely under libexec/,
+    # then put a tiny wrapper in bin/ that exec's the libexec copy.
+    # The wrapper preserves $0-relative resolution: when kai runs from
+    # #{libexec}/bin/kai it resolves ROOT = #{libexec}, which contains
+    # both libexec/kaikai/kaic2 and share/kaikai/stdlib as the script
+    # expects in installed mode.
+    (libexec/"bin").install "bin/kai"
+    (libexec/"libexec/kaikai").install "libexec/kaikai/kaic2"
+    (libexec/"share/kaikai").mkpath
+    (libexec/"share/kaikai").install Dir["share/kaikai/*"]
+
+    (bin/"kai").write <<~SH
+      #!/bin/sh
+      exec "#{libexec}/bin/kai" "$@"
+    SH
+    chmod 0755, bin/"kai"
+
     doc.install "README.md" if File.exist?("README.md")
     (prefix/"LICENSE").write File.read("LICENSE") if File.exist?("LICENSE")
   end
