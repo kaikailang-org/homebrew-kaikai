@@ -1,9 +1,12 @@
 require "download_strategy"
 
 # Custom strategy for fetching release assets from a private GitHub repo.
-# Uses HOMEBREW_GITHUB_API_TOKEN (or `gh auth token`-equivalent) to authorise
-# the download; resolves the release-asset id via the API, then GETs the
-# octet-stream with the same auth header.
+#
+# Resolves the release-asset id via the GitHub API on first fetch and
+# rewrites @url to the asset's API endpoint. Adds the auth token + the
+# octet-stream Accept header to every curl invocation. Beyond that we
+# defer to CurlDownloadStrategy so the cache/rename/checksum flow stays
+# untouched.
 class GitHubPrivateReleaseDownloadStrategy < CurlDownloadStrategy
   def initialize(url, name, version, **meta)
     super
@@ -27,28 +30,32 @@ class GitHubPrivateReleaseDownloadStrategy < CurlDownloadStrategy
     raise CurlDownloadStrategyError, "HOMEBREW_GITHUB_API_TOKEN required for private tap" if @github_token.nil? || @github_token.empty?
   end
 
-  def fetch(timeout: nil, **)
-    asset_id = resolve_asset_id
-    asset_url = "https://api.github.com/repos/#{@owner}/#{@repo}/releases/assets/#{asset_id}"
-    curl_download asset_url,
-                  "--header", "Authorization: token #{@github_token}",
-                  "--header", "Accept: application/octet-stream",
-                  to: temporary_path,
-                  timeout: timeout
-  end
+  # Resolve the asset id once and rewrite the URL so super can do the
+  # rest. Cached after the first call so we don't hit the API twice.
+  def asset_url
+    return @asset_url if @asset_url
 
-  private
-
-  def resolve_asset_id
     release_url = "https://api.github.com/repos/#{@owner}/#{@repo}/releases/tags/#{@tag}"
     out, _, status = curl_output "--header", "Authorization: token #{@github_token}",
                                  "--header", "Accept: application/json",
                                  release_url
     raise CurlDownloadStrategyError, "release lookup failed: #{@tag}" unless status.success?
+    require "json"
     release = JSON.parse(out)
     asset = release["assets"].find { |a| a["name"] == @filename }
     raise CurlDownloadStrategyError, "asset not found: #{@filename}" if asset.nil?
-    asset["id"]
+    @asset_url = "https://api.github.com/repos/#{@owner}/#{@repo}/releases/assets/#{asset["id"]}"
+  end
+
+  def _fetch(url:, resolved_url:, timeout:)
+    super(url: asset_url, resolved_url: asset_url, timeout: timeout)
+  end
+
+  def _curl_args
+    super + [
+      "--header", "Authorization: token #{@github_token}",
+      "--header", "Accept: application/octet-stream",
+    ]
   end
 end
 
