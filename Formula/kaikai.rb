@@ -35,13 +35,22 @@ class GitHubPrivateReleaseDownloadStrategy < CurlDownloadStrategy
   def asset_url
     return @asset_url if @asset_url
 
-    release_url = "https://api.github.com/repos/#{@owner}/#{@repo}/releases/tags/#{@tag}"
-    out, _, status = curl_output "--header", "Authorization: token #{@github_token}",
-                                 "--header", "Accept: application/json",
-                                 release_url
-    raise CurlDownloadStrategyError, "release lookup failed: #{@tag}" unless status.success?
     require "json"
-    release = JSON.parse(out)
+    require "open3"
+    release_url = "https://api.github.com/repos/#{@owner}/#{@repo}/releases/tags/#{@tag}"
+    out, status = Open3.capture2(
+      "curl", "--silent", "--show-error", "--location",
+      "--header", "Authorization: token #{@github_token}",
+      "--header", "Accept: application/json",
+      release_url
+    )
+    raise CurlDownloadStrategyError, "release lookup failed: #{@tag} status=#{status}" unless status.success?
+    begin
+      release = JSON.parse(out)
+    rescue JSON::ParserError => e
+      raise CurlDownloadStrategyError, "release JSON parse failed: #{e.message}; first 200: #{out[0, 200]}"
+    end
+    raise CurlDownloadStrategyError, "release has no assets: #{out[0, 200]}" if release["assets"].nil?
     asset = release["assets"].find { |a| a["name"] == @filename }
     raise CurlDownloadStrategyError, "asset not found: #{@filename}" if asset.nil?
     @asset_url = "https://api.github.com/repos/#{@owner}/#{@repo}/releases/assets/#{asset["id"]}"
