@@ -95,7 +95,15 @@ class Kaikai < Formula
     # both libexec/kaikai/kaic2 and share/kaikai/stdlib as the script
     # expects in installed mode.
     (libexec/"bin").install "bin/kai"
-    (libexec/"libexec/kaikai").install "libexec/kaikai/kaic2"
+    # Glob libexec/kaikai/* so any helpers shipped by the tarball
+    # (kaic2, kai-pkg, future tools) get installed without the
+    # formula needing a separate line per binary. Required for
+    # multi-file projects with a kai.toml: bin/kai shells out to
+    # libexec/kaikai/kai-pkg for manifest resolution, and without
+    # it any kai.toml project fails with "installation is corrupt"
+    # (see lnds/kaikai#512 — restored in the 0.53.1 release tarball
+    # via lnds/kaikai@build-release.sh).
+    (libexec/"libexec/kaikai").install Dir["libexec/kaikai/*"]
     (libexec/"share/kaikai").mkpath
     (libexec/"share/kaikai").install Dir["share/kaikai/*"]
 
