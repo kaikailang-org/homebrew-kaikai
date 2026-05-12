@@ -78,7 +78,7 @@ class Kaikai < Formula
     on_arm do
       url "https://github.com/lnds/kaikai/releases/download/v0.53.0/kaikai-v0.53.0-darwin-arm64.tar.gz",
           using: GitHubPrivateReleaseDownloadStrategy
-      sha256 "5d592aea989311d48b361be2b5c27420f2045f58d7def3888766b3bd691a315d"
+      sha256 "151d65ee4aaf63ce8c373b9e2780fa72125be31947bc77786ba02fcbc376480b"
     end
   end
 
