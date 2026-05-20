@@ -7,7 +7,7 @@ class Kaikai < Formula
   on_macos do
     on_arm do
       url "https://github.com/kaikailang-org/kaikai/releases/download/v0.79.0/kaikai-v0.79.0-darwin-arm64.tar.gz"
-      sha256 "836de0a0e801a6fcd7d4e9b79042e6925bc1c178ead56c96b398d94a53e2f087"
+      sha256 "a47ff9f371780c9844bba0a37ae71279bfc04956e2f26652eeaa3b140ee36d6d"
     end
   end
 
