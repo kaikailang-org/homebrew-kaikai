@@ -1,13 +1,13 @@
 class Kaikai < Formula
   desc "Functional language with effects, LLVM backend, and structured concurrency"
   homepage "https://github.com/kaikailang-org/kaikai"
-  version "0.198.0"
+  version "0.199.0"
   license "MIT"
 
   on_macos do
     on_arm do
-      url "https://github.com/kaikailang-org/kaikai/releases/download/v0.198.0/kaikai-v0.198.0-darwin-arm64.tar.gz"
-      sha256 "6fa19deb38e18ff0f7e54f42df31703757ca40dcd3c15a92c3bf730d7cda42c0"
+      url "https://github.com/kaikailang-org/kaikai/releases/download/v0.199.0/kaikai-v0.199.0-darwin-arm64.tar.gz"
+      sha256 "fc737b10518d88eaeb324d00a11394d7642aa520ad403d7012823a30bc1457af"
     end
   end
 
